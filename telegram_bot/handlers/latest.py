@@ -24,7 +24,13 @@ async def latest_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text_lines = [f"Topildi: *{count}* ta e'lon.  (page {page})"]
     for it in items:
-        text_lines.append(f"• *{it['title']}* — _{it['company']}_")
+        line = f"• *{it['title']}* — _{it['company']}_"
+        if it.get("location_country"):
+            line += f" ({it['location_country']})"
+        if it.get("job_type"):
+            line += f" [{it['job_type']}]"
+        text_lines.append(line)
+
     await update.message.reply_text(
         "\n".join(text_lines),
         parse_mode="Markdown",
@@ -32,36 +38,6 @@ async def latest_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         disable_web_page_preview=True,
     )
 
-async def latest_pager(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data_str = query.data  # e.g. "latest:page=2"
-    try:
-        page = int(data_str.split("page=")[1])
-        if page < 1:
-            page = 1
-    except Exception:
-        page = 1
-
-    data = api_get("jobs/", params={"page": page})
-    if not data:
-        await query.edit_message_text("API xatosi yoki natija topilmadi.")
-        return
-
-    items = data.get("results", [])
-    count, has_next = _page_meta(data, page)
-    kb = jobs_list_kb(items, page, has_next)
-
-    text_lines = [f"Topildi: *{count}* ta e'lon.  (page {page})"]
-    for it in items:
-        text_lines.append(f"• *{it['title']}* — _{it['company']}_")
-    await query.edit_message_text(
-        "\n".join(text_lines),
-        parse_mode="Markdown",
-        reply_markup=kb,
-        disable_web_page_preview=True,
-    )
 
 async def job_detail(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -81,8 +57,13 @@ async def job_detail(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         f"*{detail.get('title','') }* — _{detail.get('company','')}_\n\n"
         f"{detail.get('url','')}\n"
-        f"Posted: `{detail.get('posted_at','')}`"
+        f"Posted: `{detail.get('posted_at','')}`\n"
     )
+    if detail.get("location_country"):
+        text += f"{detail['location_country']}\n"
+    if detail.get("job_type"):
+        text += f"{detail['job_type']}\n"
+
     await query.edit_message_text(
         text, parse_mode="Markdown", disable_web_page_preview=True
     )

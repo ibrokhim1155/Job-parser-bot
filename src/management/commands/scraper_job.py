@@ -6,7 +6,10 @@ import requests
 
 from src.models import Job
 
-REMOTIVE_URL = getattr(settings, "REMOTIVE_API", "https://remotive.com/api/remote-jobs?search=python")
+REMOTIVE_URL = getattr(
+    settings, "REMOTIVE_API", "https://remotive.com/api/remote-jobs?search=python"
+)
+
 
 class Command(BaseCommand):
     help = "Scrape jobs from public API and upsert into DB"
@@ -29,10 +32,15 @@ class Command(BaseCommand):
                 title = item.get("title") or "Untitled"
                 company = item.get("company_name") or item.get("company") or "Unknown"
                 url = item.get("url") or item.get("job_url")
-                posted_raw = item.get("publication_date") or item.get("date") or item.get("created_at")
+                posted_raw = (
+                    item.get("publication_date")
+                    or item.get("date")
+                    or item.get("created_at")
+                )
 
                 if not url:
                     continue
+
                 try:
                     posted_at = datetime.fromisoformat(posted_raw.replace("Z", "+00:00"))
                 except Exception:
@@ -44,6 +52,8 @@ class Command(BaseCommand):
                         "title": title[:255],
                         "company": company[:255],
                         "posted_at": posted_at,
+                        "location_country": item.get("candidate_required_location"),
+                        "job_type": item.get("job_type"),
                     },
                 )
                 created += int(is_created)
@@ -52,4 +62,6 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(f"Skip item error: {e}"))
                 continue
 
-        self.stdout.write(self.style.SUCCESS(f"Done. created={created}, updated={updated}"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Done. created={created}, updated={updated}")
+        )
