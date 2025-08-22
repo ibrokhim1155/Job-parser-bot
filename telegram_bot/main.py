@@ -22,9 +22,7 @@ def run():
 
     app.add_handler(CallbackQueryHandler(latest_pager, pattern=r"^latest:"))
     app.add_handler(CallbackQueryHandler(job_detail, pattern=r"^job:"))
-
     app.add_handler(InlineQueryHandler(inline_query))
-
     app.add_error_handler(error_handler)
 
     log.info("Bot started.")

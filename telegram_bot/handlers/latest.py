@@ -38,6 +38,41 @@ async def latest_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         disable_web_page_preview=True,
     )
 
+async def latest_pager(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    try:
+        page = int(query.data.split("page=")[1])
+        if page < 1:
+            page = 1
+    except Exception:
+        page = 1
+
+    data = api_get("jobs/", params={"page": page})
+    if not data:
+        await query.edit_message_text("API xatosi yoki natija topilmadi.")
+        return
+
+    items = data.get("results", [])
+    count, has_next = _page_meta(data, page)
+    kb = jobs_list_kb(items, page, has_next)
+
+    text_lines = [f"Topildi: *{count}* ta e'lon.  (page {page})"]
+    for it in items:
+        line = f"• *{it['title']}* — _{it['company']}_"
+        if it.get("location_country"):
+            line += f" ({it['location_country']})"
+        if it.get("job_type"):
+            line += f" [{it['job_type']}]"
+        text_lines.append(line)
+
+    await query.edit_message_text(
+        "\n".join(text_lines),
+        parse_mode="Markdown",
+        reply_markup=kb,
+        disable_web_page_preview=True,
+    )
 
 async def job_detail(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
